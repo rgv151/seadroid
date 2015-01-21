@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Window;
 import android.view.WindowManager;
@@ -18,12 +19,15 @@ import android.widget.Toast;
 
 import com.seafile.seadroid2.R;
 import com.seafile.seadroid2.SettingsManager;
+import com.seafile.seadroid2.gesturelock.DefaultAppLock;
 import com.seafile.seadroid2.gesturelock.LockPatternUtils;
 import com.seafile.seadroid2.gesturelock.LockPatternView;
 import com.seafile.seadroid2.gesturelock.LockPatternView.Cell;
 
 
 public class UnlockGesturePasswordActivity extends Activity {
+    public static final String DEBUG_TAG = "UnlockGesturePasswordActivity";
+
     private LockPatternView mLockPatternView;
     private int mFailedPatternAttemptsSinceLastTimeout = 0;
     private CountDownTimer mCountdownTimer = null;
@@ -34,7 +38,8 @@ public class UnlockGesturePasswordActivity extends Activity {
     private Toast mToast;
 
     SettingsManager settingsMgr;
-    
+    private Bundle extras;
+
     private void showToast(CharSequence message) {
         if (null == mToast) {
             mToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
@@ -61,6 +66,9 @@ public class UnlockGesturePasswordActivity extends Activity {
         mShakeAnim = AnimationUtils.loadAnimation(this, R.anim.shake_x);
         
         settingsMgr = SettingsManager.instance();
+
+        Intent intent = getIntent();
+        extras = intent.getExtras();
     }
 
     @Override
@@ -106,6 +114,11 @@ public class UnlockGesturePasswordActivity extends Activity {
                 mLockPatternView
                         .setDisplayMode(LockPatternView.DisplayMode.Correct);
                 settingsMgr.setupGestureLock();
+                if (extras != null) {
+                    Intent sIntent = new Intent(UnlockGesturePasswordActivity.this, ShareToSeafileActivity.class);
+                    sIntent.putExtras(extras);
+                    UnlockGesturePasswordActivity.this.startActivity(sIntent);
+                }
                 finish();
             } else {
                 mLockPatternView
