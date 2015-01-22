@@ -5,16 +5,18 @@
  */
 package com.seafile.seadroid2.gesturelock;
 
+import java.util.Arrays;
+import java.util.Map;
+
 import android.app.Activity;
 import android.app.Application;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+
+import com.google.common.collect.Maps;
 import com.seafile.seadroid2.SettingsManager;
 import com.seafile.seadroid2.ui.activity.UnlockGesturePasswordActivity;
-
-import java.util.Arrays;
-import java.util.Date;
 
 /**
  * Implementation of AppLock
@@ -65,7 +67,19 @@ public class DefaultAppLock extends AbstractAppLock {
                 Arrays.asList(appLockDisabledActivities).contains(activity.getClass().getName()))
             return;
 
-        settingsMgr.saveGestureLockTimeStamp();
+        if (!isActiviyBeingChecked(activity)) {
+            settingsMgr.saveGestureLockTimeStamp();
+        }
+    }
+
+    private static Map<Object, Long> mCheckedActivities = Maps.newHashMap();
+
+    private boolean isActiviyBeingChecked(Activity activity) {
+        if (!mCheckedActivities.containsKey(activity)) {
+            return false;
+        }
+        long ts = mCheckedActivities.get(activity);
+        return ts + 5000 > System.currentTimeMillis();
     }
 
     @Override
@@ -80,6 +94,7 @@ public class DefaultAppLock extends AbstractAppLock {
             return;
 
         if (mustShowUnlockSceen()) {
+            mCheckedActivities.put(activity, System.currentTimeMillis());
             Intent i = new Intent(activity.getApplicationContext(), UnlockGesturePasswordActivity.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             Bundle extras = activity.getIntent().getExtras();
