@@ -40,6 +40,14 @@
             android:layout="@layout/seafile_checkbox_layout" >
         </CheckBoxPreference>
         <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="include_videos_switch_key"
+                android:summaryOff="Upload photos only"
+                android:summaryOn="Upload photos and videos"
+                android:title="Include videos"
+                android:layout="@layout/seafile_checkbox_layout" >
+        </CheckBoxPreference>
+        <CheckBoxPreference
             android:defaultValue="false"
             android:key="allow_mobile_connections_switch_key"
             android:summaryOff="@string/settings_default_wifi_connection"
@@ -47,7 +55,12 @@
             android:title="@string/settings_allow_mobile_connections"
             android:layout="@layout/seafile_checkbox_layout" >
         </CheckBoxPreference>
-
+        <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="upload_while_charging_switch_key"
+                android:title="Upload only while charging"
+                android:layout="@layout/seafile_checkbox_layout" >
+        </CheckBoxPreference>
         <Preference
             android:key="camera_upload_repo_key"
             android:layout="@layout/preference"

@@ -1,19 +1,13 @@
 package com.seafile.seadroid2;
 
-import java.io.File;
-
-import android.util.Log;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-
 import com.seafile.seadroid2.account.Account;
 import com.seafile.seadroid2.account.AccountManager;
 import com.seafile.seadroid2.data.DatabaseHelper;
-import com.seafile.seadroid2.ui.activity.AccountsActivity;
-import com.seafile.seadroid2.util.Utils;
 import com.seafile.seadroid2.gesturelock.LockPatternUtils;
+import com.seafile.seadroid2.util.Utils;
 
 /**
  * Access the app settings
@@ -52,6 +46,8 @@ public final class SettingsManager {
     public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_SERVER = PKG + ".camera.account.server";
     public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_TOKEN = PKG + ".camera.account.token";
     public static final String ALLOW_MOBILE_CONNECTIONS_SWITCH_KEY = "allow_mobile_connections_switch_key";
+    public static final String INCLUDE_VIDEOS_SWITCH_KEY = "include_videos_switch_key";
+    public static final String UPLOAD_WHILE_CHARGING_SWITCH_KEY = "upload_while_charging_switch_key";
     public static final String CAMERA_UPLOAD_SWITCH_KEY = "camera_upload_switch_key";
     public static final String CAMERA_UPLOAD_REPO_KEY = "camera_upload_repo_key";
     public static final int CHOOSE_CAMERA_UPLOAD_REPO_REQUEST = 2;
@@ -154,9 +150,16 @@ public final class SettingsManager {
         return true;
     }
 
-
     public boolean isCameraUploadEnabled() {
         return settingsSharedPref.getBoolean(CAMERA_UPLOAD_SWITCH_KEY, false);
+    }
+
+    public boolean isCameraUploadIncludeVideos() {
+        return settingsSharedPref.getBoolean(INCLUDE_VIDEOS_SWITCH_KEY, true);
+    }
+
+    public boolean isCameraUploadWhileCharingOnly() {
+        return settingsSharedPref.getBoolean(UPLOAD_WHILE_CHARGING_SWITCH_KEY, true);
     }
 
     public boolean isMobileConnectionsAllowed() {

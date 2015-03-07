@@ -1,7 +1,5 @@
 package com.seafile.seadroid2.ui.fragment;
 
-import java.io.File;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.*;
@@ -19,12 +17,8 @@ import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
-
 import com.google.common.collect.Maps;
 import com.seafile.seadroid2.*;
-import com.seafile.seadroid2.ConcurrentAsyncTask;
-import com.seafile.seadroid2.R;
-import com.seafile.seadroid2.SettingsManager;
 import com.seafile.seadroid2.account.Account;
 import com.seafile.seadroid2.account.AccountInfo;
 import com.seafile.seadroid2.account.AccountManager;
@@ -43,6 +37,7 @@ import com.seafile.seadroid2.ui.dialog.TaskDialog.TaskDialogListener;
 import com.seafile.seadroid2.util.Utils;
 import org.json.JSONException;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -61,6 +56,8 @@ public class SettingsPreferenceFragment extends CustomPreferenceFragment impleme
     private CheckBoxPreference gestureLockSwitch;
     private CheckBoxPreference cameraUploadSwitch;
     private CheckBoxPreference allowMobileConnections;
+    private CheckBoxPreference includeVideos;
+    private CheckBoxPreference uploadWhileCharging;
     private Preference cameraUploadRepo;
     private Preference versionName;
     private Preference authorInfo;
@@ -152,9 +149,13 @@ public class SettingsPreferenceFragment extends CustomPreferenceFragment impleme
         cameraUploadSwitch = (CheckBoxPreference) findPreference(SettingsManager.CAMERA_UPLOAD_SWITCH_KEY);
         cameraUploadRepo = findPreference(SettingsManager.CAMERA_UPLOAD_REPO_KEY);
         allowMobileConnections = (CheckBoxPreference) findPreference(SettingsManager.ALLOW_MOBILE_CONNECTIONS_SWITCH_KEY);
+        includeVideos = (CheckBoxPreference) findPreference(SettingsManager.INCLUDE_VIDEOS_SWITCH_KEY);
+        uploadWhileCharging = (CheckBoxPreference) findPreference(SettingsManager.UPLOAD_WHILE_CHARGING_SWITCH_KEY);
         cameraUploadSwitch.setOnPreferenceClickListener(this);
         cameraUploadRepo.setOnPreferenceClickListener(this);
         allowMobileConnections.setOnPreferenceClickListener(this);
+        includeVideos.setOnPreferenceClickListener(this);
+        uploadWhileCharging.setOnPreferenceClickListener(this);
 
         cameraUploadIntent = new Intent(mActivity, CameraUploadService.class);
         repoName = settingsMgr.getCameraUploadRepoName();
@@ -168,13 +169,11 @@ public class SettingsPreferenceFragment extends CustomPreferenceFragment impleme
             cameraUploadRepo.setEnabled(false);
         }
 
-        if (!cameraUploadSwitch.isChecked()) {
-            allowMobileConnections.setEnabled(false);
-            cameraUploadRepo.setEnabled(false);
-        } else {
-            allowMobileConnections.setEnabled(true);
-            cameraUploadRepo.setEnabled(true);
-        }
+        Boolean isCameraUploadEnabled = cameraUploadSwitch.isChecked();
+        allowMobileConnections.setEnabled(isCameraUploadEnabled);
+        cameraUploadRepo.setEnabled(isCameraUploadEnabled);
+        includeVideos.setEnabled(isCameraUploadEnabled);
+        uploadWhileCharging.setEnabled(isCameraUploadEnabled);
 
         // About
         versionName = findPreference(SettingsManager.SETTINGS_ABOUT_VERSION_KEY);
@@ -270,15 +269,12 @@ public class SettingsPreferenceFragment extends CustomPreferenceFragment impleme
             }
         } else if (preference.getKey().equals(SettingsManager.CAMERA_UPLOAD_SWITCH_KEY)) {
             isUploadEnabled = settingsMgr.isCameraUploadEnabled();
-            if (!isUploadEnabled) {
-                cameraUploadRepo.setEnabled(false);
-                allowMobileConnections.setEnabled(false);
-                startCameraUploadService(false);
-            } else {
-                allowMobileConnections.setEnabled(true);
-                cameraUploadRepo.setEnabled(true);
-                startCameraUploadService(true);
-            }
+            cameraUploadRepo.setEnabled(isUploadEnabled);
+            allowMobileConnections.setEnabled(isUploadEnabled);
+            includeVideos.setEnabled(isUploadEnabled);
+            uploadWhileCharging.setEnabled(isUploadEnabled);
+            startCameraUploadService(isUploadEnabled);
+
         } else if (preference.getKey().equals(SettingsManager.ALLOW_MOBILE_CONNECTIONS_SWITCH_KEY)) {
             // user does not allow mobile connections, stop camera upload service
             if (!settingsMgr.checkCameraUploadNetworkAvailable()) {

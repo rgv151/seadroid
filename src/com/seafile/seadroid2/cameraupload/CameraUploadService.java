@@ -1,16 +1,7 @@
 package com.seafile.seadroid2.cameraupload;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 import android.app.Service;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.ServiceConnection;
+import android.content.*;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
@@ -21,7 +12,6 @@ import android.provider.MediaStore;
 import android.provider.MediaStore.MediaColumns;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-
 import com.google.common.collect.Lists;
 import com.seafile.seadroid2.ConcurrentAsyncTask;
 import com.seafile.seadroid2.SeafException;
@@ -31,6 +21,10 @@ import com.seafile.seadroid2.data.SeafCachedPhoto;
 import com.seafile.seadroid2.transfer.*;
 import com.seafile.seadroid2.transfer.TransferService.TransferBinder;
 import com.seafile.seadroid2.util.CameraUploadUtil;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CameraUploadService extends Service {
     private static final String DEBUG_TAG = "CameraUploadService";
@@ -67,11 +61,13 @@ public class CameraUploadService extends Service {
         bindService(bIntent, mConnection, Context.BIND_AUTO_CREATE);
         Log.d(DEBUG_TAG, "try bind TransferService");
 
-        this.getApplicationContext()
-        .getContentResolver()
-        .registerContentObserver(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, false,
-                cameraUploadObserver);
+        ContentResolver contentResolver = getApplicationContext().getContentResolver();
+        contentResolver.registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, false, cameraUploadObserver);
+        if(settingsMgr.isCameraUploadIncludeVideos()) {
+            contentResolver.registerContentObserver(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, false, cameraUploadObserver);
+        }
+
+
         LocalBroadcastManager.getInstance(this).registerReceiver(transferReceiver,
                 new IntentFilter(TransferManager.BROADCAST_ACTION));
     }
@@ -175,7 +171,7 @@ public class CameraUploadService extends Service {
         }
 
         @Override
-        public void onChange(boolean selfChange) {
+        public void onChange(boolean selfChange, Uri uri) {
             super.onChange(selfChange);
             isNetworkAvailable = settingsMgr.checkCameraUploadNetworkAvailable();
             if (!isNetworkAvailable) {
@@ -186,21 +182,24 @@ public class CameraUploadService extends Service {
                 return;
             }
 
-            ConcurrentAsyncTask.execute(new CameraEventReceiverTask());
+            String mime = getApplicationContext().getContentResolver().getType(uri);
+            Log.v(DEBUG_TAG, "onChange uri: " + uri + " mime: " + mime);
+            if(mime.endsWith("/image") || (settingsMgr.isCameraUploadIncludeVideos() && mime.endsWith("/video"))) {
+                ConcurrentAsyncTask.execute(new CameraEventReceiverTask(uri));
+            }
         }
     }
 
-    private File getPhotoFromMediaStore(Context context, Uri uri) {
-        Cursor cursor = context.getContentResolver().query(uri, null, null,
-                null, "date_added DESC");
-        File photo = null;
+    private File getFileFromMediaStore(Context context, Uri uri) {
+        Cursor cursor = context.getContentResolver().query(uri, null, null, null, "date_added DESC");
+        File file = null;
         if (cursor.moveToNext()) {
             int dataColumn = cursor.getColumnIndexOrThrow(MediaColumns.DATA);
             String filePath = cursor.getString(dataColumn);
-            photo = new File(filePath);
+            file = new File(filePath);
         }
         cursor.close();
-        return photo;
+        return file;
     }
 
     private class PhotoUploadTask extends AsyncTask<Void, Void, List<File>> {
@@ -228,7 +227,7 @@ public class CameraUploadService extends Service {
                 e.printStackTrace();
             }
 
-            return CameraUploadUtil.getAllPhotosAbsolutePathList();
+            return CameraUploadUtil.getAllMediaAbsolutePathList();
         }
 
         @Override
@@ -246,13 +245,12 @@ public class CameraUploadService extends Service {
                 return;
             }
 
-            for (File photo : result) {
-                String path = photo.getName();
+            for (File media : result) {
                 // use local database to detect duplicate upload
-                SeafCachedPhoto cp = cUploadManager.getCachedPhoto(repoName, repoId, DIR, path);
+                SeafCachedPhoto cp = cUploadManager.getCachedPhoto(repoName, repoId, DIR, media.getName());
                 if (cp == null) {
                     // add photos to uploading queue
-                    addCameraUploadTask(repoId, repoName, CAMERA_UPLOAD_REMOTE_PARENTDIR + CAMERA_UPLOAD_REMOTE_DIR, photo.getAbsolutePath());
+                    addCameraUploadTask(repoId, repoName, CAMERA_UPLOAD_REMOTE_PARENTDIR + CAMERA_UPLOAD_REMOTE_DIR, media.getAbsolutePath());
                 }
             }
         }
@@ -260,10 +258,14 @@ public class CameraUploadService extends Service {
 
     private class CameraEventReceiverTask extends AsyncTask<Void, Void, File> {
         // private String detectLog;
+
+        private Uri uri;
+        public CameraEventReceiverTask(Uri uri) {
+            this.uri = uri;
+        }
         @Override
         protected File doInBackground(Void... params) {
-            return getPhotoFromMediaStore(getApplicationContext(),
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            return getFileFromMediaStore(getApplicationContext(), uri);
         }
 
         @Override
