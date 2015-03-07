@@ -7,7 +7,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Binder;
-import android.os.Handler;
 import android.os.IBinder;
 import android.provider.MediaStore;
 import android.provider.MediaStore.MediaColumns;
@@ -51,8 +50,6 @@ public class CameraUploadService extends Service {
     private String accountToken;
     private String repoId;
     private String repoName;
-
-    protected final Handler mTimer = new Handler();
 
     @Override
     public void onCreate() {
