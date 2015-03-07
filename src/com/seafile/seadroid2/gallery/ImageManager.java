@@ -1,15 +1,5 @@
 package com.seafile.seadroid2.gallery;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -24,10 +14,15 @@ import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.util.Log;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * ImageManager is used to retrieve and store images
@@ -39,6 +34,17 @@ public class ImageManager {
     private static final Uri STORAGE_URI = Images.Media.EXTERNAL_CONTENT_URI;
     private static final Uri THUMB_URI = Images.Thumbnails.EXTERNAL_CONTENT_URI;
     private static final Uri VIDEO_STORAGE_URI = Uri.parse("content://media/external/video/media");
+
+
+    private static String[] paths = {
+            "/DCIM",
+            "/DCIM/Camera",
+            "/DCIM/100MEDIA",
+            // Many Samsung phones mount the external sd card to /sdcard/external_sd
+            "/external_sd/DCIM",
+            "/external_sd/DCIM/Camera",
+            "/external_sd/DCIM/100MEDIA"
+    };
 
     // ImageListParam specifies all the parameters we need to create an image
     // list (we also need a ContentResolver).
@@ -126,42 +132,26 @@ public class ImageManager {
     private static List<String> allBucketIds;
 
     public static List<String> getAllPath(){
-        String[] paths = {
-                "/DCIM",
-                "/DCIM/Camera",
-                "/DCIM/100MEDIA",
-                // Many Samsung phones mount the external sd card to /sdcard/external_sd
-                "/external_sd/DCIM",
-                "/external_sd/DCIM/Camera",
-                "/external_sd/DCIM/100MEDIA"
-            };
-
-            List<String> pathList = Lists.newArrayList();
+        List<String> pathList = Lists.newArrayList();
+        for(String sdCardPath : getAllStoragePaths()) {
             for (String path : paths) {
-                String fullPath = Environment.getExternalStorageDirectory().toString() + path;
+                String fullPath = sdCardPath + path;
                 pathList.add(fullPath);
             }
+        }
+
         return pathList;
     }
     
     public static List<String> getAllBucketIds() {
         if (allBucketIds == null) {
-            String[] paths = {
-                "/DCIM",
-                "/DCIM/Camera",
-                "/DCIM/100MEDIA",
-                // Many Samsung phones mount the external sd card to /sdcard/external_sd
-                "/external_sd/DCIM",
-                "/external_sd/DCIM/Camera",
-                "/external_sd/DCIM/100MEDIA"
-            };
-
             List<String> ids = Lists.newArrayList();
-            for (String path : paths) {
-                String fullPath = Environment.getExternalStorageDirectory().toString() + path;
-                ids.add(getBucketId(fullPath));
+            for(String sdCardPath : getAllStoragePaths()) {
+                for (String path : paths) {
+                    String fullPath = sdCardPath + path;
+                    ids.add(getBucketId(fullPath));
+                }
             }
-
             allBucketIds = ImmutableList.copyOf(ids);
         }
 
@@ -543,5 +533,20 @@ public class ImageManager {
         }
 
         return result;
+    }
+
+    public static List<String> getAllStoragePaths() {
+        List<String> paths = new ArrayList<String>();
+        paths.add(Environment.getExternalStorageDirectory().toString());
+
+        String[] extSdCardPaths = {"/mnt/extSdCard", "/mnt/external_sd"};
+
+        for(String path : extSdCardPaths) {
+            File extSdcard = new File(path);
+            if(extSdcard.exists() && extSdcard.isDirectory()) {
+                paths.add(extSdcard.getAbsolutePath());
+            }
+        }
+        return paths;
     }
 }
