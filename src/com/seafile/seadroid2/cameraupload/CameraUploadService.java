@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.MediaStore;
 import android.provider.MediaStore.MediaColumns;
@@ -50,6 +51,8 @@ public class CameraUploadService extends Service {
     private String accountToken;
     private String repoId;
     private String repoName;
+
+    protected final Handler mTimer = new Handler();
 
     @Override
     public void onCreate() {
@@ -108,7 +111,7 @@ public class CameraUploadService extends Service {
         }
 
         if (isCameraUploadEnabled) {
-            ConcurrentAsyncTask.execute(new PhotoUploadTask());
+            ConcurrentAsyncTask.execute(new MediaUploadTask());
         }
 
         return START_STICKY;
@@ -202,7 +205,8 @@ public class CameraUploadService extends Service {
         return file;
     }
 
-    private class PhotoUploadTask extends AsyncTask<Void, Void, List<File>> {
+    private class MediaUploadTask extends AsyncTask<Void, Void, List<File>> {
+
         @Override
         protected List<File> doInBackground(Void... params) {
             isNetworkAvailable = settingsMgr.checkCameraUploadNetworkAvailable();
@@ -244,7 +248,6 @@ public class CameraUploadService extends Service {
                 }
                 return;
             }
-
             for (File media : result) {
                 // use local database to detect duplicate upload
                 SeafCachedPhoto cp = cUploadManager.getCachedPhoto(repoName, repoId, DIR, media.getName());

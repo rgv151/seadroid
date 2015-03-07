@@ -136,7 +136,8 @@ public class ImageManager {
         for(String sdCardPath : getAllStoragePaths()) {
             for (String path : paths) {
                 String fullPath = sdCardPath + path;
-                pathList.add(fullPath);
+                if(new File(fullPath).exists())
+                    pathList.add(fullPath);
             }
         }
 
@@ -149,7 +150,8 @@ public class ImageManager {
             for(String sdCardPath : getAllStoragePaths()) {
                 for (String path : paths) {
                     String fullPath = sdCardPath + path;
-                    ids.add(getBucketId(fullPath));
+                    if(new File(fullPath).exists())
+                        ids.add(getBucketId(fullPath));
                 }
             }
             allBucketIds = ImmutableList.copyOf(ids);
